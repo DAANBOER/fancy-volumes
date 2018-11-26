@@ -82,8 +82,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     short getVoxel(double[] coord) {
 
-        if (coord[0] < 0 || coord[0] > volume.getDimX() || coord[1] < 0 || coord[1] > volume.getDimY()
-                || coord[2] < 0 || coord[2] > volume.getDimZ()) {
+        if (coord[0] < 0 || coord[0] >= volume.getDimX() || coord[1] < 0 || coord[1] >= volume.getDimY()
+                || coord[2] < 0 || coord[2] >= volume.getDimZ()) {
             return 0;
         }
 
@@ -96,8 +96,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
 
     short getVoxelTriLinear(double[] coord) {
-        if (coord[0] < 0 || coord[0] > volume.getDimX() || coord[1] < 0 || coord[1] > volume.getDimY()
-                || coord[2] < 0 || coord[2] > volume.getDimZ()) {
+        if (coord[0] < 0 || coord[0] >= volume.getDimX() || coord[1] < 0 || coord[1] >= volume.getDimY()
+                || coord[2] < 0 || coord[2] >= volume.getDimZ()) {
             return 0;
         }
 
@@ -110,9 +110,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             cubeCoords[i][1] = (int) Math.ceil(coord[i]);
         }
 
-        if (cubeCoords[0][1] >= volume.getDimX() || cubeCoords[1][1] >= volume.getDimY() || cubeCoords[2][1] >= volume.getDimZ()) {
+        /*if (cubeCoords[0][1] >= volume.getDimX() || cubeCoords[1][1] >= volume.getDimY() || cubeCoords[2][1] >= volume.getDimZ()) {
             return 0;
-        }
+        }*/
 
         for (int i = 0; i < 3; i++) {
             alpha[i] = (coord[i] - cubeCoords[i][0]) / (double)(cubeCoords[i][1] - cubeCoords[i][0]);
