@@ -323,9 +323,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor current, composite;
 
-        System.out.println(viewDim);
-
-
         for (int j = 0; j < image.getHeight(); j+=imageScaling) {
             for (int i = 0; i < image.getWidth(); i+=imageScaling) {
 
