@@ -386,7 +386,103 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
 
+    void transfer2D(double[] viewMatrix, int imageScaling, int depthScaling) {
+        // clear image
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                image.setRGB(i, j, 0);
+            }
+        }
 
+        // vector uVec and vVec define a plane through the origin,
+        // perpendicular to the view vector viewVec
+        double[] viewVec = new double[3];
+        double[] uVec = new double[3];
+        double[] vVec = new double[3];
+        VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
+        VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
+        VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
+
+        // image is square
+        int imageCenter = image.getWidth() / 2;
+
+        double[] pixelCoord = new double[3];
+        double[] volumeCenter = new double[3];
+        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+
+        // sample on a plane through the origin of the volume data
+        double max = volume.getMaximum();
+        TFColor voxelColor = new TFColor();
+
+        int viewDim = (int) Math.sqrt(Math.pow((double) volume.getDimZ(), 2.) +
+                Math.pow((double) volume.getDimX(), 2.) +
+                Math.pow((double) volume.getDimY(), 2.) );
+
+        /*TFColor[] colors = new TFColor[viewDim];
+
+        for (int i = 0; i < viewDim; i++) {
+            colors[i] = new TFColor();
+        }*/
+
+        TFColor current, transfer2D;
+
+        for (int j = 0; j < image.getHeight(); j+=imageScaling) {
+            for (int i = 0; i < image.getWidth(); i+=imageScaling) {
+
+                //short val = 0;
+                transfer2D = new TFColor(0., 0., 0., 0.);
+
+                for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
+
+                    pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                            + viewVec[0] * (k - volumeCenter[0]) + volumeCenter[0];
+                    pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                            + viewVec[1] * (k - volumeCenter[1]) + volumeCenter[1];
+                    pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                            + viewVec[2] * (k - volumeCenter[2]) + volumeCenter[2];
+
+                    //colors[k] = tFunc.getColor(getVoxelTriLinear(pixelCoord));
+
+                    current = tFunc.getColor(getVoxelTriLinear(pixelCoord));
+
+                    transfer2D.a = current.a + (1. - current.a) * transfer2D.a;
+                    //transfer2D.r = current.r * current.a + (1. - current.a) * transfer2D.r;
+                    //transfer2D.g = current.g * current.a + (1. - current.a) * transfer2D.g;
+                    //transfer2D.b = current.b * current.a + (1. - current.a) * transfer2D.b;
+                    //transfer2D.a = current.a + (1. - current.a) * transfer2D.a;
+                }
+
+                // Map the intensity to a grey value by linear scaling
+
+                voxelColor.r = transfer2D.r;
+                voxelColor.g = transfer2D.g;
+                voxelColor.b = transfer2D.b;
+                voxelColor.a = transfer2D.a;
+
+                //voxelColor.r = colors[0].r;
+                //voxelColor.g = colors[0].g;
+                //voxelColor.b = colors[0].b;
+                //voxelColor.a = colors[0].a;
+
+                //voxelColor.r = val/max;
+                //voxelColor.g = voxelColor.r;
+                //voxelColor.b = voxelColor.r;
+                //voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
+                // Alternatively, apply the transfer function to obtain a color
+                // voxelColor = tFunc.getColor(val);
+
+                // BufferedImage expects a pixel color packed as ARGB in an int
+                int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
+                int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
+                int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
+                int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
+                int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
+                image.setRGB(i, j, pixelColor);
+                //image.setRGB((image.getWidth() - 1) - i, (image.getHeight() - 1) - j, pixelColor);
+            }
+        }
+    }
+    
     private void drawBoundingBox(GL2 gl) {
         gl.glPushAttrib(GL2.GL_CURRENT_BIT);
         gl.glDisable(GL2.GL_LIGHTING);
@@ -473,6 +569,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             mip(viewMatrix, imageScaling, depthScaling);
         } else if (panel.mode == 2) {
             composite(viewMatrix, imageScaling, depthScaling);
+        } else if (panel.mode == 3) {
+            transfer2D(viewMatrix, imageScaling, depthScaling);
         }
 
         long endTime = System.currentTimeMillis();
