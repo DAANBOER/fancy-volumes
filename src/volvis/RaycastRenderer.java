@@ -134,6 +134,44 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return (short) ((1 - alpha[2]) * interY[0] + alpha[2] * interY[1]);
     }
 
+    float getGradientMagnitudeTrilinear(double[] coord) {
+        if (coord[0] < 0 || coord[0] >= gradients.getDimX() || coord[1] < 0 || coord[1] >= gradients.getDimY()
+                || coord[2] < 0 || coord[2] >= gradients.getDimZ()) {
+            return 0;
+        }
+
+        double alpha[] = {0, 0, 0};
+
+        int cubeCoords[][] = {{0, 0}, {0, 0}, {0, 0}};
+
+        for (int i = 0; i < 3; i++) {
+            cubeCoords[i][0] = (int) Math.floor(coord[i]);
+            cubeCoords[i][1] = (int) Math.ceil(coord[i]);
+        }
+
+        if (cubeCoords[0][1] >= gradients.getDimX() || cubeCoords[1][1] >= gradients.getDimY() || cubeCoords[2][1] >= gradients.getDimZ()) {
+            return 0;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            alpha[i] = (coord[i] - cubeCoords[i][0]) / (double)(cubeCoords[i][1] - cubeCoords[i][0]);
+        }
+
+        float interX[][] = {{0, 0}, {0, 0}};
+        float interY[] = {0, 0};
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                interX[i][j] = (float) ( (1. - alpha[0]) * gradients.getGradient(cubeCoords[0][0], cubeCoords[1][i], cubeCoords[2][j]).mag +
+                        alpha[0] * gradients.getGradient(cubeCoords[0][1], cubeCoords[1][i], cubeCoords[2][j]).mag);
+            }
+        }
+
+        interY[0] = (float) ((1. - alpha[1]) * interX[0][0] + alpha[1] * interX[1][0]);
+        interY[1] = (float) ((1. - alpha[1]) * interX[0][1] + alpha[1] * interX[1][1]);
+
+        return (float) ((1. - alpha[2]) * interY[0] + alpha[2] * interY[1]);
+    }
 
     void slicer(double[] viewMatrix) {
 
@@ -418,19 +456,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 Math.pow((double) volume.getDimX(), 2.) +
                 Math.pow((double) volume.getDimY(), 2.) );
 
-        /*TFColor[] colors = new TFColor[viewDim];
+        short voxel;
+        float gradient;
+        double alpha, totalAlpha;
 
-        for (int i = 0; i < viewDim; i++) {
-            colors[i] = new TFColor();
-        }*/
-
-        TFColor current, transfer2D;
+        double r = tfEditor2D.triangleWidget.radius;
+        double av = tfEditor2D.triangleWidget.color.a;
+        short fv = tfEditor2D.triangleWidget.baseIntensity;
 
         for (int j = 0; j < image.getHeight(); j+=imageScaling) {
             for (int i = 0; i < image.getWidth(); i+=imageScaling) {
 
-                //short val = 0;
-                transfer2D = new TFColor(0., 0., 0., 0.);
+                totalAlpha = 1.;
+                //voxelColor.a = 0;
 
                 for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
 
@@ -441,35 +479,25 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                             + viewVec[2] * (k - volumeCenter[2]) + volumeCenter[2];
 
-                    //colors[k] = tFunc.getColor(getVoxelTriLinear(pixelCoord));
+                    voxel = getVoxelTriLinear(pixelCoord);
+                    gradient = getGradientMagnitudeTrilinear(pixelCoord);
 
-                    current = tFunc.getColor(getVoxelTriLinear(pixelCoord));
+                    if (gradient == 0. && fv == voxel) {
+                        alpha = av;
+                    } else if (gradient > 0 && fv >= voxel - r * gradient && fv <= voxel + r * gradient) {
+                        alpha = av * (1. - 1./r * (fv - voxel) / gradient);
+                    } else {
+                        alpha = 0.;
+                    }
 
-                    transfer2D.a = current.a + (1. - current.a) * transfer2D.a;
-                    //transfer2D.r = current.r * current.a + (1. - current.a) * transfer2D.r;
-                    //transfer2D.g = current.g * current.a + (1. - current.a) * transfer2D.g;
-                    //transfer2D.b = current.b * current.a + (1. - current.a) * transfer2D.b;
-                    //transfer2D.a = current.a + (1. - current.a) * transfer2D.a;
+                    totalAlpha *= 1. - alpha;//current.a + (1. - current.a) * total.a;
+                    //voxelColor.a = 1 - (1 - voxelColor.a) * (1 - alpha);
                 }
 
-                // Map the intensity to a grey value by linear scaling
-
-                voxelColor.r = transfer2D.r;
-                voxelColor.g = transfer2D.g;
-                voxelColor.b = transfer2D.b;
-                voxelColor.a = transfer2D.a;
-
-                //voxelColor.r = colors[0].r;
-                //voxelColor.g = colors[0].g;
-                //voxelColor.b = colors[0].b;
-                //voxelColor.a = colors[0].a;
-
-                //voxelColor.r = val/max;
-                //voxelColor.g = voxelColor.r;
-                //voxelColor.b = voxelColor.r;
-                //voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
-                // Alternatively, apply the transfer function to obtain a color
-                // voxelColor = tFunc.getColor(val);
+                voxelColor.r = tfEditor2D.triangleWidget.color.r;
+                voxelColor.g = tfEditor2D.triangleWidget.color.g;
+                voxelColor.b = tfEditor2D.triangleWidget.color.b;
+                voxelColor.a = 1. - totalAlpha;
 
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
@@ -478,7 +506,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
                 image.setRGB(i, j, pixelColor);
-                //image.setRGB((image.getWidth() - 1) - i, (image.getHeight() - 1) - j, pixelColor);
             }
         }
     }

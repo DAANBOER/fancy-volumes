@@ -49,19 +49,23 @@ public class GradientVolume {
         return dimZ;
     }
 
+    private short getVoxel(int x, int y, int z) {
+        if (x < 0 || x >= dimX || y < 0 || y >= dimY || z < 0 || z >= dimZ) {
+            return 0;
+        }
+
+        return volume.getVoxel(x, y, z);
+    }
+
     private void compute() {
 
         for (int i = 0; i < dimX; i++) {
             for (int j = 0; j < dimY; j++) {
                 for (int k = 0; k < dimZ; k++) {
 
-                    if (i == 0 || j == 0 || k == 0 || i == dimX-1 || j == dimY-1 || k == dimZ-1) {
-                        this.setGradient(i, j, k, new VoxelGradient());
-                    } else {
-                        this.setGradient(i, j, k, new VoxelGradient((float) 0.5 * (float) (volume.getVoxel(i + 1, j, k) - volume.getVoxel(i - 1, j, k)),
-                                                                            (float) 0.5 * (float) (volume.getVoxel(i, j + 1, k) - volume.getVoxel(i, j - 1, k)),
-                                                                            (float) 0.5 * (float) (volume.getVoxel(i, j, k + 1) - volume.getVoxel(i, j, k - 1))));
-                    }
+                    this.setGradient(i, j, k, new VoxelGradient((float) 0.5 * (float) (getVoxel(i + 1, j, k) - getVoxel(i - 1, j, k)),
+                                                                (float) 0.5 * (float) (getVoxel(i, j + 1, k) - getVoxel(i, j - 1, k)),
+                                                                (float) 0.5 * (float) (getVoxel(i, j, k + 1) - getVoxel(i, j, k - 1))));
                 }
             }
         }
