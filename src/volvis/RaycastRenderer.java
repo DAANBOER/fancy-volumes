@@ -230,6 +230,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //return (float) ((1. - alpha[2]) * interY[0] + alpha[2] * interY[1]);
     }
 
+    VoxelGradient getGradient(double[] coord) {
+        if (coord[0] < 0 || coord[0] >= volume.getDimX() || coord[1] < 0 || coord[1] >= volume.getDimY()
+                || coord[2] < 0 || coord[2] >= volume.getDimZ()) {
+            return new VoxelGradient();
+        }
+
+        int x = (int) Math.floor(coord[0]);
+        int y = (int) Math.floor(coord[1]);
+        int z = (int) Math.floor(coord[2]);
+
+        return gradients.getGradient(x, y, z);
+    }
+
     void slicer(double[] viewMatrix) {
 
         // clear image
@@ -528,8 +541,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 totalAlpha = 1.;
                 //voxelColor.a = 0;
 
-                //for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
-                for (int k = 0; k < viewDim; k += depthScaling) {
+                for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
+                //for (int k = 0; k < viewDim; k += depthScaling) {
 
                     pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                             + viewVec[0] * (k - volumeCenter[0]) + volumeCenter[0];
@@ -793,8 +806,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         } else if (panel.mode == 2) {
             composite(viewMatrix, imageScaling, depthScaling);
         } else if (panel.mode == 3) {
-            transfer2DShade(viewMatrix, imageScaling, depthScaling);
-            //transfer2D(viewMatrix, imageScaling, depthScaling);
+
+            if (panel.shade) {
+                transfer2DShade(viewMatrix, imageScaling, depthScaling);
+            } else {
+                transfer2D(viewMatrix, imageScaling, depthScaling);
+            }
         }
 
         long endTime = System.currentTimeMillis();

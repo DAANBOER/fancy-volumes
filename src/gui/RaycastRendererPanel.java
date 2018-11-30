@@ -17,6 +17,7 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     TransferFunctionEditor tfEditor = null;
     TransferFunction2DEditor tfEditor2D = null;
     public int mode = 0;
+    public boolean shade = false;
     
     /**
      * Creates new form RaycastRendererPanel
@@ -157,7 +158,11 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_tf2dButtonActionPerformed
 
     private void shadingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
-        JOptionPane.showMessageDialog(this, "Not implemented.");
+        shade = shadingCheckbox.isSelected();
+        if (mode == 3) {
+            renderer.changed();
+        }
+        //JOptionPane.showMessageDialog(this, "Not implemented.");
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
