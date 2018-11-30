@@ -454,7 +454,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     composite.r = current.r * current.a + (1. - current.a) * composite.r;
                     composite.g = current.g * current.a + (1. - current.a) * composite.g;
                     composite.b = current.b * current.a + (1. - current.a) * composite.b;
-                    composite.a = current.a + (1. - current.a) * composite.a;
+                    //composite.a = current.a + (1. - current.a) * composite.a;
 
                     /*if (k < viewDim-1) {
                         colors[k].r = colors[k].r * colors[k].a + (1. - colors[k].a) * colors[k+1].r;
@@ -469,7 +469,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 voxelColor.r = composite.r;
                 voxelColor.g = composite.g;
                 voxelColor.b = composite.b;
-                voxelColor.a = composite.a;
+                voxelColor.a = 1.;//composite.a;
 
                 //voxelColor.r = colors[0].r;
                 //voxelColor.g = colors[0].g;
@@ -558,7 +558,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if (gradient == 0. && fv == voxel) {
                         alpha = av;
                     } else if (gradient > 0 && fv >= voxel - r * gradient && fv <= voxel + r * gradient) {
-                        alpha = av * (1. - 1./r * (fv - voxel) / gradient);
+                        alpha = av * (1. - Math.abs((fv - voxel) / gradient)/r);
                     } else {
                         alpha = 0.;
                     }
@@ -647,7 +647,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if (vGradient.mag == 0. && fv == voxel) {
                         alpha = av;
                     } else if (vGradient.mag > 0 && fv >= voxel - r * vGradient.mag && fv <= voxel + r * vGradient.mag) {
-                        alpha = av * (1. - 1./r * (fv - voxel) / vGradient.mag);
+                        alpha = av * (1. - Math.abs((fv - voxel) / vGradient.mag)/r);
                     } else {
                         alpha = 0.;
                     }
