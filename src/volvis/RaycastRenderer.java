@@ -102,9 +102,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             return 0;
         }
 
-        double alpha[] = {0, 0, 0};
+        double[] alpha = {0, 0, 0};
 
-        int cubeCoords[][] = {{0, 0}, {0, 0}, {0, 0}};
+        int[][] cubeCoords = {{0, 0}, {0, 0}, {0, 0}};
 
         for (int i = 0; i < 3; i++) {
             cubeCoords[i][0] = (int) Math.floor(coord[i]);
@@ -119,8 +119,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             alpha[i] = (coord[i] - cubeCoords[i][0]) / (double)(cubeCoords[i][1] - cubeCoords[i][0]);
         }
 
-        short interX[][] = {{0, 0}, {0, 0}};
-        short interY[] = {0, 0};
+        short[][] interX = {{0, 0}, {0, 0}};
+        short[] interY = {0, 0};
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
@@ -141,9 +141,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             return 0;
         }
 
-        double alpha[] = {0, 0, 0};
+        double[] alpha = {0, 0, 0};
 
-        int cubeCoords[][] = {{0, 0}, {0, 0}, {0, 0}};
+        int[][] cubeCoords = {{0, 0}, {0, 0}, {0, 0}};
 
         for (int i = 0; i < 3; i++) {
             cubeCoords[i][0] = (int) Math.floor(coord[i]);
@@ -158,8 +158,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             alpha[i] = (coord[i] - cubeCoords[i][0]) / (double)(cubeCoords[i][1] - cubeCoords[i][0]);
         }
 
-        float interX[][] = {{0, 0}, {0, 0}};
-        float interY[] = {0, 0};
+        float[][] interX = {{0, 0}, {0, 0}};
+        float[] interY = {0, 0};
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
@@ -180,9 +180,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             return new VoxelGradient();
         }
 
-        double alpha[] = {0, 0, 0};
+        double[] alpha = {0, 0, 0};
 
-        int cubeCoords[][] = {{0, 0}, {0, 0}, {0, 0}};
+        int[][] cubeCoords = {{0, 0}, {0, 0}, {0, 0}};
 
         for (int i = 0; i < 3; i++) {
             cubeCoords[i][0] = (int) Math.floor(coord[i]);
@@ -197,13 +197,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             alpha[i] = (coord[i] - cubeCoords[i][0]) / (double)(cubeCoords[i][1] - cubeCoords[i][0]);
         }
 
-        VoxelGradient xGradients[][] = new VoxelGradient[2][2];
-        VoxelGradient yGradients[] = new VoxelGradient[2];
+        VoxelGradient[][] xGradients = new VoxelGradient[2][2];
+        VoxelGradient[] yGradients = new VoxelGradient[2];
 
         float x, y, z;
-
-        float interX[][] = {{0, 0}, {0, 0}};
-        float interY[] = {0, 0};
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
@@ -256,7 +253,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         double[] pixelCoord = new double[3];
         double[] volumeCenter = new double[3];
-        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+        VectorMath.setVector(volumeCenter, (double)volume.getDimX() / 2., (double)volume.getDimY() / 2., (double)volume.getDimZ() / 2.);
 
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
@@ -318,7 +315,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         double[] pixelCoord = new double[3];
         double[] volumeCenter = new double[3];
-        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+        VectorMath.setVector(volumeCenter, (double)volume.getDimX() / 2., (double)volume.getDimY() / 2., (double)volume.getDimZ() / 2.);
 
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
@@ -403,7 +400,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         double[] pixelCoord = new double[3];
         double[] volumeCenter = new double[3];
-        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+        VectorMath.setVector(volumeCenter, (double)volume.getDimX() / 2., (double)volume.getDimY() / 2., (double)volume.getDimZ() / 2.);
 
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
@@ -507,7 +504,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         double[] pixelCoord = new double[3];
         double[] volumeCenter = new double[3];
-        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+        VectorMath.setVector(volumeCenter, (double)volume.getDimX() / 2., (double)volume.getDimY() / 2., (double)volume.getDimZ() / 2.);
 
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
@@ -595,7 +592,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         double[] pixelCoord = new double[3];
         double[] volumeCenter = new double[3];
-        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+        VectorMath.setVector(volumeCenter, (double)volume.getDimX() / 2., (double)volume.getDimY() / 2., (double)volume.getDimZ() / 2.);
 
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
