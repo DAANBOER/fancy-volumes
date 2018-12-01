@@ -18,6 +18,8 @@ import volume.GradientVolume;
 import volume.Volume;
 import volume.VoxelGradient;
 
+import javax.xml.bind.util.ValidationEventCollector;
+
 /**
  *
  * @author michel
@@ -631,8 +633,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 composite = new TFColor(0., 0., 0., 0.);
                 //voxelColor.a = 0;
 
-                //for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
-                for (int k = 0; k < viewDim; k += depthScaling) {
+                for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
+                //for (int k = 0; k < viewDim; k += depthScaling) {
 
                     pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                             + viewVec[0] * (k - volumeCenter[0]) + volumeCenter[0];
@@ -682,19 +684,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
 
     TFColor shadePhong(TFColor color, double[] viewVec, VoxelGradient gradient, double ambient, double diff, double spec, double alpha) {
-        //double[] halfway = new double[3];
         double[] normal = new double[3];
 
         // normalization is not necessary since the view vector is already normalized
-        //double viewVecLength = VectorMath.length(viewVec);
-
         //VectorMath.setVector(viewVec, -viewVec[0], -viewVec[1], -viewVec[2]);
 
-        //VectorMath.setVector(halfway, viewVec[0] / viewVecLength, viewVec[1] / viewVecLength, viewVec[2] / viewVecLength);
-
-
         // In het simplified case that L=V we also have H=V, since V is normalized
-        //VectorMath.setVector(halfway, viewVec[0], viewVec[1], viewVec[2]);
 
         if (gradient.mag == 0.) {
             return new TFColor(ambient, ambient, ambient, 0.);
@@ -712,11 +707,56 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double second = diff * dotprod;
         double third = spec * Math.pow(dotprod, alpha);
 
+        return new TFColor(ambient + color.r * second + third, ambient + color.g * second + third, ambient + color.b * second + third, 0.0);
+    }
+
+    TFColor complexShadePhong(TFColor color, double[] viewVec, VoxelGradient gradient, double ambient, double diff, double spec, double alpha) {
+        //double[] halfway = new double[3];
+        double[] normal = new double[3];
+        double[] reflect = new double[3];
+
+        // normalization is not necessary since the view vector is already normalized
+        //double viewVecLength = VectorMath.length(viewVec);
+
+        //VectorMath.setVector(viewVec, -viewVec[0], -viewVec[1], -viewVec[2]);
+
+        //VectorMath.setVector(halfway, viewVec[0] / viewVecLength, viewVec[1] / viewVecLength, viewVec[2] / viewVecLength);
+
+
+        // In het simplified case that L=V we also have H=V, since V is normalized
+        //VectorMath.setVector(halfway, viewVec[0], viewVec[1], viewVec[2]);
+
+        if (gradient.mag == 0.) {
+
+            VectorMath.setVector(normal, 0., 0., 0.);
+            //return new TFColor(ambient, ambient, ambient, 0.);
+        } else {
+            VectorMath.setVector(normal, gradient.x / gradient.mag, gradient.y / gradient.mag, gradient.z / gradient.mag);
+        }
+
+        //double second = diff * VectorMath.dotproduct(viewVec, normal);
+        double dotprod = VectorMath.dotproduct(normal, viewVec);
+
+        VectorMath.setVector(reflect, (2 * dotprod) * normal[0] - viewVec[0],
+                (2 * dotprod) * normal[1] - viewVec[1],
+                (2 * dotprod) * normal[2] - viewVec[2]);
+
+        double dotprod2 = VectorMath.dotproduct(viewVec, reflect);
+
+        if (dotprod2 < 0 || dotprod < 0) {
+            return new TFColor(0., 0., 0., 0.);
+        }
+
+        double second = diff * dotprod;
+        double third = spec * Math.pow(dotprod2, alpha);
+
         /*color.r = ambient + color.r * second + third;
         color.g = ambient + color.g * second + third;
         color.b = ambient + color.b * second + third;*/
 
-        return new TFColor(ambient + color.r * second + third, ambient + color.g * second + third, ambient + color.b * second + third, 0.0);
+        return new TFColor(ambient + color.r * ( second + third ),
+                ambient + color.g * ( second + third ),
+                ambient + color.b * ( second + third ), 0.0);
     }
 
     private void drawBoundingBox(GL2 gl) {
