@@ -439,8 +439,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 //short val = 0;
                 composite = new TFColor(0., 0., 0., 0.);
 
-                //for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
-                for (int k = 0; k < viewDim; k += depthScaling) {
+                for (int k = viewDim - 1; k >= 0; k-=depthScaling) {
+                //for (int k = 0; k < viewDim; k += depthScaling) {
 
                     pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                             + viewVec[0] * (k - volumeCenter[0]) + volumeCenter[0];
@@ -491,7 +491,39 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
-                image.setRGB(i, j, pixelColor);
+
+                if (imageScaling > 1) {
+                    int odd = imageScaling % 2;
+
+                    if (odd == 0) {
+                        int half = imageScaling/2;
+
+                        for (int i_k = -half + 1; i_k <= half; ++i_k) {
+                            for (int j_k = -half + 1; j_k <= half; ++j_k) {
+                                if ((i + i_k >= 0) && (i + i_k < image.getWidth()) &&
+                                        (j + j_k >= 0) && (j + j_k) < image.getHeight()) {
+
+                                    image.setRGB(i + i_k, j + j_k, pixelColor);
+                                }
+                            }
+                        }
+                    } else {
+                        int half = (imageScaling-1)/2;
+
+                        for (int i_k = -half; i_k <= half; ++i_k) {
+                            for (int j_k = -half; j_k <= half; ++j_k) {
+                                if ((i + i_k >= 0) && (i + i_k < image.getWidth()) &&
+                                        (j + j_k >= 0) && (j + j_k) < image.getHeight()) {
+
+                                    image.setRGB(i + i_k, j + j_k, pixelColor);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    image.setRGB(i, j, pixelColor);
+                }
+
                 //image.setRGB((image.getWidth() - 1) - i, (image.getHeight() - 1) - j, pixelColor);
             }
         }
@@ -580,7 +612,38 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
-                image.setRGB(i, j, pixelColor);
+
+                if (imageScaling > 1) {
+                    int odd = imageScaling % 2;
+
+                    if (odd == 0) {
+                        int half = imageScaling/2;
+
+                        for (int i_k = -half + 1; i_k <= half; ++i_k) {
+                            for (int j_k = -half + 1; j_k <= half; ++j_k) {
+                                if ((i + i_k >= 0) && (i + i_k < image.getWidth()) &&
+                                        (j + j_k >= 0) && (j + j_k) < image.getHeight()) {
+
+                                    image.setRGB(i + i_k, j + j_k, pixelColor);
+                                }
+                            }
+                        }
+                    } else {
+                        int half = (imageScaling-1)/2;
+
+                        for (int i_k = -half; i_k <= half; ++i_k) {
+                            for (int j_k = -half; j_k <= half; ++j_k) {
+                                if ((i + i_k >= 0) && (i + i_k < image.getWidth()) &&
+                                        (j + j_k >= 0) && (j + j_k) < image.getHeight()) {
+
+                                    image.setRGB(i + i_k, j + j_k, pixelColor);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    image.setRGB(i, j, pixelColor);
+                }
             }
         }
     }
@@ -678,7 +741,38 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
-                image.setRGB(i, j, pixelColor);
+
+                if (imageScaling > 1) {
+                    int odd = imageScaling % 2;
+
+                    if (odd == 0) {
+                        int half = imageScaling/2;
+
+                        for (int i_k = -half + 1; i_k <= half; ++i_k) {
+                            for (int j_k = -half + 1; j_k <= half; ++j_k) {
+                                if ((i + i_k >= 0) && (i + i_k < image.getWidth()) &&
+                                        (j + j_k >= 0) && (j + j_k) < image.getHeight()) {
+
+                                    image.setRGB(i + i_k, j + j_k, pixelColor);
+                                }
+                            }
+                        }
+                    } else {
+                        int half = (imageScaling-1)/2;
+
+                        for (int i_k = -half; i_k <= half; ++i_k) {
+                            for (int j_k = -half; j_k <= half; ++j_k) {
+                                if ((i + i_k >= 0) && (i + i_k < image.getWidth()) &&
+                                        (j + j_k >= 0) && (j + j_k) < image.getHeight()) {
+
+                                    image.setRGB(i + i_k, j + j_k, pixelColor);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    image.setRGB(i, j, pixelColor);
+                }
             }
         }
     }
@@ -835,7 +929,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int imageScaling = 1, depthScaling = 1;
 
         if (this.interactiveMode) {
-            imageScaling = 2;
+            imageScaling = 3;
             depthScaling = 4;
         }
 
