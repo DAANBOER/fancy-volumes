@@ -589,12 +589,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
                     gradient = getGradientMagnitudeTrilinear(pixelCoord);
 
-                    if (gradient == 0. && fv == voxel) {
-                        alpha = av;
-                    } else if (gradient > 0 && fv >= voxel - r * gradient && fv <= voxel + r * gradient) {
-                        alpha = av * (1. - Math.abs((fv - voxel) / gradient)/r);
+                    if (gradient < tfEditor2D.triangleWidget.minGradMag || gradient > tfEditor2D.triangleWidget.maxGradMag) {
+                        alpha = 0;
                     } else {
-                        alpha = 0.;
+                        if (gradient == 0. && fv == voxel) {
+                            alpha = av;
+                        } else if (gradient > 0 && fv >= voxel - r * gradient && fv <= voxel + r * gradient) {
+                            alpha = av * (1. - Math.abs((fv - voxel) / gradient)/r);
+                        } else {
+                            alpha = 0.;
+                        }
                     }
 
                     totalAlpha *= 1. - alpha;//current.a + (1. - current.a) * total.a;
@@ -709,12 +713,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     voxel = getVoxelTriLinear(pixelCoord);
                     vGradient = getGradientTrilinear(pixelCoord);
 
-                    if (vGradient.mag == 0. && fv == voxel) {
-                        alpha = av;
-                    } else if (vGradient.mag > 0 && fv >= voxel - r * vGradient.mag && fv <= voxel + r * vGradient.mag) {
-                        alpha = av * (1. - Math.abs((fv - voxel) / vGradient.mag)/r);
+                    if (vGradient.mag < tfEditor2D.triangleWidget.minGradMag || vGradient.mag > tfEditor2D.triangleWidget.maxGradMag) {
+                        alpha = 0;
                     } else {
-                        alpha = 0.;
+                        if (vGradient.mag == 0. && fv == voxel) {
+                            alpha = av;
+                        } else if (vGradient.mag > 0 && fv >= voxel - r * vGradient.mag && fv <= voxel + r * vGradient.mag) {
+                            alpha = av * (1. - Math.abs((fv - voxel) / vGradient.mag)/r);
+                        } else {
+                            alpha = 0.;
+                        }
                     }
 
                     current = shadePhong(tfEditor2D.triangleWidget.color, viewVec, vGradient, 0.1, 0.7, 0.2, 10.0);
