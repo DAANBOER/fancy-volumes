@@ -29,9 +29,6 @@ public class TransferFunction {
         LUT = new TFColor[LUTsize];
 
         buildLUT();
-
-        setTestFunc();
-
     }
     
     
