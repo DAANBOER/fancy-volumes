@@ -12,12 +12,15 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
+import java.io.File;
+
 import util.TFChangeListener;
 import util.VectorMath;
 import volume.GradientVolume;
 import volume.Volume;
 import volume.VoxelGradient;
 
+import javax.imageio.ImageIO;
 import javax.xml.bind.util.ValidationEventCollector;
 
 /**
@@ -308,6 +311,72 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
 
+    void colorSlicer(double[] viewMatrix) {
+
+        // clear image
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                image.setRGB(i, j, 0);
+            }
+        }
+
+        // vector uVec and vVec define a plane through the origin,
+        // perpendicular to the view vector viewVec
+        double[] viewVec = new double[3];
+        double[] uVec = new double[3];
+        double[] vVec = new double[3];
+        VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
+        VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
+        VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
+
+        // image is square
+        int imageCenter = image.getWidth() / 2;
+
+        double[] pixelCoord = new double[3];
+        double[] volumeCenter = new double[3];
+        VectorMath.setVector(volumeCenter, (double)volume.getDimX() / 2., (double)volume.getDimY() / 2., (double)volume.getDimZ() / 2.);
+
+        // sample on a plane through the origin of the volume data
+        double max = volume.getMaximum();
+        TFColor voxelColor = new TFColor();
+
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+
+                pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                        + volumeCenter[0];
+                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                        + volumeCenter[1];
+                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                        + volumeCenter[2];
+
+                //int val = getVoxel(pixelCoord);
+                short val = getVoxelTriLinear(pixelCoord);
+
+                voxelColor = tFunc.getColor(val);
+
+                // Map the intensity to a grey value by linear scaling
+                /*voxelColor.r = val/max;
+                voxelColor.g = voxelColor.r;
+                voxelColor.b = voxelColor.r;
+                voxelColor.a = val > 0 ? 1.0 : 0.0; */ // this makes intensity 0 completely transparent and the rest opaque
+                // Alternatively, apply the transfer function to obtain a color
+                // voxelColor = tFunc.getColor(val);
+
+
+                // BufferedImage expects a pixel color packed as ARGB in an int
+                int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
+                int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
+                int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
+                int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
+                int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
+
+                image.setRGB(i, j, pixelColor);
+            }
+        }
+
+    }
+
     void mip(double[] viewMatrix, int resolutionScaling, int depthScaling) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
@@ -341,9 +410,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                                       Math.pow((double) volume.getDimY(), 2.) );
 
         short val = 0, maxVal;
-
-        System.out.println(viewDim);
-
 
         for (int j = 0; j < image.getHeight(); j+=resolutionScaling) {
             for (int i = 0; i < image.getWidth(); i+=resolutionScaling) {
@@ -388,12 +454,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
-                image.setRGB(i, j, pixelColor);
+
+                setPixels(i, j, resolutionScaling, depthScaling, pixelColor);
             }
         }
     }
 
-    void composite(double[] viewMatrix, int imageScaling, int depthScaling) {
+    void composite(double[] viewMatrix, int resolutionScaling, int depthScaling) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -427,8 +494,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor current, composite;
 
-        for (int j = 0; j < image.getHeight(); j+=imageScaling) {
-            for (int i = 0; i < image.getWidth(); i+=imageScaling) {
+        for (int j = 0; j < image.getHeight(); j+=resolutionScaling) {
+            for (int i = 0; i < image.getWidth(); i+=resolutionScaling) {
 
                 //short val = 0;
                 composite = new TFColor(0., 0., 0., 0.);
@@ -463,12 +530,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
 
-                setPixels(i, j, imageScaling, depthScaling, pixelColor);
+                setPixels(i, j, resolutionScaling, depthScaling, pixelColor);
             }
         }
     }
 
-    void compositeFront(double[] viewMatrix, int imageScaling, int depthScaling) {
+    void compositeFront(double[] viewMatrix, int resolutionScaling, int depthScaling) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -502,8 +569,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor current, composite;
 
-        for (int j = 0; j < image.getHeight(); j+=imageScaling) {
-            for (int i = 0; i < image.getWidth(); i+=imageScaling) {
+        for (int j = 0; j < image.getHeight(); j+=resolutionScaling) {
+            for (int i = 0; i < image.getWidth(); i+=resolutionScaling) {
 
                 composite = new TFColor(0., 0., 0., 1.);
 
@@ -540,12 +607,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
 
-                setPixels(i, j, imageScaling, depthScaling, pixelColor);
+                setPixels(i, j, resolutionScaling, depthScaling, pixelColor);
             }
         }
     }
 
-    void transfer2D(double[] viewMatrix, int imageScaling, int depthScaling) {
+    void transfer2D(double[] viewMatrix, int resolutionScaling, int depthScaling) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -585,8 +652,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double av = tfEditor2D.triangleWidget.color.a;
         short fv = tfEditor2D.triangleWidget.baseIntensity;
 
-        for (int j = 0; j < image.getHeight(); j+=imageScaling) {
-            for (int i = 0; i < image.getWidth(); i+=imageScaling) {
+        for (int j = 0; j < image.getHeight(); j+=resolutionScaling) {
+            for (int i = 0; i < image.getWidth(); i+=resolutionScaling) {
 
                 totalAlpha = 1.;
 
@@ -634,12 +701,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
 
-                setPixels(i, j, imageScaling, depthScaling, pixelColor);
+                setPixels(i, j, resolutionScaling, depthScaling, pixelColor);
             }
         }
     }
 
-    void transfer2DShade(double[] viewMatrix, int imageScaling, int depthScaling) {
+    void transfer2DShade(double[] viewMatrix, int resolutionScaling, int depthScaling) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -680,8 +747,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double av = tfEditor2D.triangleWidget.color.a;
         short fv = tfEditor2D.triangleWidget.baseIntensity;
 
-        for (int j = 0; j < image.getHeight(); j+=imageScaling) {
-            for (int i = 0; i < image.getWidth(); i+=imageScaling) {
+        for (int j = 0; j < image.getHeight(); j+=resolutionScaling) {
+            for (int i = 0; i < image.getWidth(); i+=resolutionScaling) {
 
                 totalAlpha = 1.;
                 composite = new TFColor(0., 0., 0., 0.);
@@ -732,12 +799,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
 
-                setPixels(i, j, imageScaling, depthScaling, pixelColor);
+                setPixels(i, j, resolutionScaling, depthScaling, pixelColor);
             }
         }
     }
 
-    void transfer2DShadeFront(double[] viewMatrix, int imageScaling, int depthScaling) {
+    void transfer2DShadeFront(double[] viewMatrix, int resolutionScaling, int depthScaling) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -778,10 +845,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double av = tfEditor2D.triangleWidget.color.a;
         short fv = tfEditor2D.triangleWidget.baseIntensity;
 
-        for (int j = 0; j < image.getHeight(); j+=imageScaling) {
-            for (int i = 0; i < image.getWidth(); i+=imageScaling) {
+        for (int j = 0; j < image.getHeight(); j+=resolutionScaling) {
+            for (int i = 0; i < image.getWidth(); i+=resolutionScaling) {
                 composite = new TFColor(0., 0., 0., 1.);
-                //voxelColor.a = 0;
 
                 for (int k = 0; k < viewDim; k += depthScaling) {
 
@@ -831,7 +897,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
 
-                setPixels(i, j, imageScaling, depthScaling, pixelColor);
+                setPixels(i, j, resolutionScaling, depthScaling, pixelColor);
             }
         }
     }
@@ -912,12 +978,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 ambient + color.b * ( second + third ), 0.0);
     }
 
-    private void setPixels(int i, int j, int imageScaling, int depthScaling, int pixelColor) {
-        if (imageScaling > 1) {
-            int odd = imageScaling % 2;
+    private void setPixels(int i, int j, int resolutionScaling, int depthScaling, int pixelColor) {
+        if (resolutionScaling > 1) {
+            int odd = resolutionScaling % 2;
 
             if (odd == 0) {
-                int half = imageScaling/2;
+                int half = resolutionScaling/2;
 
                 for (int i_k = -half + 1; i_k <= half; ++i_k) {
                     for (int j_k = -half + 1; j_k <= half; ++j_k) {
@@ -929,7 +995,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     }
                 }
             } else {
-                int half = (imageScaling-1)/2;
+                int half = (resolutionScaling-1)/2;
 
                 for (int i_k = -half; i_k <= half; ++i_k) {
                     for (int j_k = -half; j_k <= half; ++j_k) {
@@ -1019,29 +1085,45 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         long startTime = System.currentTimeMillis();
 
-        int imageScaling = 1, depthScaling = 1;
+        int resolutionScaling = 1, depthScaling = 1;
 
         if (this.interactiveMode) {
-            imageScaling = 3;
+            resolutionScaling = 3;
             depthScaling = 4;
         }
 
         if (panel.mode == 0) {
-            slicer(viewMatrix);
+
+            if (panel.shade) {
+                colorSlicer(viewMatrix);
+            } else {
+                slicer(viewMatrix);
+            }
         } else if (panel.mode == 1) {
-            mip(viewMatrix, imageScaling, depthScaling);
+            mip(viewMatrix, resolutionScaling, depthScaling);
         } else if (panel.mode == 2) {
-            //composite(viewMatrix, imageScaling, depthScaling);
-            compositeFront(viewMatrix, imageScaling, depthScaling);
+            //composite(viewMatrix, resolutionScaling, depthScaling);
+            compositeFront(viewMatrix, resolutionScaling, depthScaling);
         } else if (panel.mode == 3) {
 
             if (panel.shade) {
-                //transfer2DShade(viewMatrix, imageScaling, depthScaling);
-                transfer2DShadeFront(viewMatrix, imageScaling, depthScaling);
+                //transfer2DShade(viewMatrix, resolutionScaling, depthScaling);
+                transfer2DShadeFront(viewMatrix, resolutionScaling, depthScaling);
             } else {
-                transfer2D(viewMatrix, imageScaling, depthScaling);
+                transfer2D(viewMatrix, resolutionScaling, depthScaling);
             }
         }
+
+        // uncomment to save a png of the generated image (out.png)
+        /*
+        try {
+            ImageIO.write(image, "png",new File("out.png"));
+        } catch (java.io.IOException e) {
+            System.out.println("Could not save image to file.");
+            System.out.println(e.getMessage());
+        }
+        */
+
 
         long endTime = System.currentTimeMillis();
         double runningTime = (endTime - startTime);

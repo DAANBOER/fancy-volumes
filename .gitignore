@@ -1,3 +1,7 @@
+# Pictures
+*.png
+*.PNG
+
 # Build directories and class files
 out/
 build/
